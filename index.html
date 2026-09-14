@@ -32,15 +32,15 @@
 
     /* Thanh góc trên: Đồng hồ, Nút Loa & Nút ngôn ngữ */
     #top-bar-container {
-      position: absolute;
-      top: 15px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      z-index: 10;
-    }
+  position: absolute;
+  top: 15px;
+  right: 15px; /* Đổi từ left sang right và cách lề phải 15px */
+  transform: none; /* Xóa lệnh căn giữa cũ */
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 10;
+}
 
     #timer-display {
       color: #ffffff;
