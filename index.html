@@ -1,1 +1,604 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pháp Luân Xoay Chuyển</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
+    body {
+      background: #0003ad;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+      font-family: Arial, sans-serif;
+    }
+
+    /* Canvas nằm nền dưới cùng */
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: block;
+      background: transparent;
+      z-index: 1;
+    }
+
+    /* Thanh góc trên: Đồng hồ, Nút Loa & Nút ngôn ngữ */
+    #top-bar-container {
+      position: absolute;
+      top: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 10;
+    }
+
+    #timer-display {
+      color: #ffffff;
+      font-size: 18px;
+      font-weight: bold;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 5px 14px;
+      border-radius: 20px;
+      display: none;
+      pointer-events: none;
+      letter-spacing: 2px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+
+    .lang-btn-group {
+      display: flex;
+      gap: 4px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 4px;
+      border-radius: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+
+    .lang-btn {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      color: #fff;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: bold;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .lang-btn.active, .lang-btn:hover {
+      background: #ffeb3b;
+      color: #000;
+      border-color: #ffeb3b;
+    }
+
+    /* Nút icon loa */
+    .audio-btn {
+      background: rgba(0, 0, 0, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      color: #fff;
+      width: 32px;
+      height: 32px;
+      font-size: 14px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      transition: all 0.2s;
+    }
+
+    .audio-btn.active, .audio-btn:hover {
+      background: #ffeb3b;
+      color: #000;
+      border-color: #ffeb3b;
+    }
+
+    /* ===== CÁC KHU VỰC CHỮ DÙNG FLEXBOX ĐỐI XỨNG ===== */
+    .text-group {
+      position: relative;
+      z-index: 5;
+      text-align: center;
+      pointer-events: none;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #top-text-group {
+      margin-top: 65px; 
+    }
+
+    #bottom-text-group {
+      margin-bottom: 65px;
+    }
+
+    .pinyin-han-grid-5 {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(50px, 1fr));
+      width: 95%;
+      max-width: 400px;
+      justify-content: center;
+      margin: 0 auto;
+      gap: 5px;
+    }
+
+    .pinyin-han-grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(55px, 1fr));
+      width: 85%;
+      max-width: 350px;
+      justify-content: center;
+      margin: 0 auto;
+      gap: 5px;
+    }
+
+    .grid-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .pinyin-text {
+      color: #00ffff;
+      font-size: clamp(10px, 3vw, 20px);
+      font-weight: 600;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+      text-transform: lowercase;
+      white-space: nowrap;
+    }
+
+    @keyframes han-pulse-glow {
+      0%, 100% {
+        opacity: 0.85;
+        transform: scale(1);
+        text-shadow: 0 0 8px rgba(255, 235, 59, 0.5), 0 0 15px rgba(255, 215, 0, 0.3), 0 2px 6px rgba(0,0,0,0.9);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.5);
+        text-shadow: 0 0 18px rgba(255, 235, 59, 0.9), 0 0 30px rgba(255, 215, 0, 0.6), 0 2px 6px rgba(0,0,0,0.9);
+      }
+    }
+
+    .sub-translation {
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+      font-size: clamp(12px, 4vw, 20px);
+      font-weight: bold;
+      margin-top: 6px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+      letter-spacing: 1px;
+      white-space: nowrap;
+      width: 100%;
+      text-align: center;
+    } 
+
+@font-face {
+  font-family: 'MyCustomFont';
+  src: url('CN-Le.ttf') format('truetype');
+}
+
+    .han-text {
+      font-family:  'MyCustomFont', "SimSun", "STSong", "Microsoft YaHei", sans-serif;
+      font-size: clamp(24px, 8vw, 45px);
+      //font-weight: bold;
+      line-height: 1.2;
+      white-space: nowrap;
+      color: #ffeb3b;
+      animation: han-pulse-glow 3s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  
+  <audio id="myAudio" src="https://media.falundafa.org/media1/media/dafa/music/128k/PuDu.mp3" loop></audio>
+  <!-- Thêm autoplay và loop cho audio2 -->
+  <audio id="audio2" src="niem.mp3" autoplay loop></audio>
+
+  <!-- Thanh góc trên -->
+  <div id="top-bar-container">
+    <div id="timer-display">00:00</div>
+    <!-- Nút icon loa chuyển lên trước nhóm nút ngôn ngữ (bên trái nút Vi) -->
+    <button class="audio-btn active" id="btn-audio2" onclick="toggleAudio2()" title="Phát/Tắt nhạc 2">🔊</button>
+    <div class="lang-btn-group">
+      <button class="lang-btn active" id="btn-vi" onclick="changeLang('vi')">Vi</button>
+      <button class="lang-btn" id="btn-eng" onclick="changeLang('eng')">Eng</button>
+    </div>
+  </div>
+
+  <!-- Nhóm Dòng 1 (Phía trên vòng xoay): 5x2 Grid -->
+  <div class="text-group" id="top-text-group">
+    <div class="pinyin-han-grid-5">
+      <div class="grid-col"><span class="pinyin-text">fǎ</span><span class="han-text">法</span></div>
+      <div class="grid-col"><span class="pinyin-text">lún</span><span class="han-text">輪</span></div>
+      <div class="grid-col"><span class="pinyin-text">dà</span><span class="han-text">大</span></div>
+      <div class="grid-col"><span class="pinyin-text">fǎ</span><span class="han-text">法</span></div>
+      <div class="grid-col"><span class="pinyin-text">hǎo</span><span class="han-text">好</span></div>
+    </div>
+    <div class="sub-translation" id="text-top-trans">Pháp Luân Đại Pháp Hảo</div>
+  </div>
+
+  <div></div>
+
+  <!-- Nhóm Dòng 2 (Phía dưới vòng xoay): 4x2 Grid -->
+  <div class="text-group" id="bottom-text-group">
+    <div class="pinyin-han-grid-4">
+      <div class="grid-col"><span class="pinyin-text">zhēn</span><span class="han-text">真</span></div>
+      <div class="grid-col"><span class="pinyin-text">shàn</span><span class="han-text">善</span></div>
+      <div class="grid-col"><span class="pinyin-text">rěn</span><span class="han-text">忍</span></div>
+      <div class="grid-col"><span class="pinyin-text">hǎo</span><span class="han-text">好</span></div>
+    </div>
+    <div class="sub-translation" id="text-bottom-trans">Chân Thiện Nhẫn Hảo</div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+    const audio = document.getElementById('myAudio');
+    const audio2 = document.getElementById('audio2');
+    const timerDisplay = document.getElementById('timer-display');
+    const audio2Btn = document.getElementById('btn-audio2');
+
+    let SCALE = 30;
+    let outerR, centerR, smallR, orbitR, tableCanvasSize;
+
+    function updateScaleAndSizes() {
+      const minDimension = Math.min(window.innerWidth, window.innerHeight);
+      SCALE = minDimension < 768 ? minDimension / 25 : 30;
+
+      outerR  = 9.1   * SCALE;  
+      centerR = 4.5   * SCALE;  
+      smallR  = 2.25  * SCALE;  
+      orbitR  = 6.75  * SCALE;  
+
+      tableCanvasSize = Math.ceil((outerR + 25) * 2);
+    }
+
+    updateScaleAndSizes();
+
+    const offscreenCanvas = document.createElement('canvas');
+    const offCtx = offscreenCanvas.getContext('2d');
+    offscreenCanvas.width = tableCanvasSize;
+    offscreenCanvas.height = tableCanvasSize;
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      updateScaleAndSizes();
+      
+      offscreenCanvas.width = tableCanvasSize;
+      offscreenCanvas.height = tableCanvasSize;
+    }
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    let tableAngle  = 0;
+    let centerAngle = 0;
+    let spinAngle   = 0;
+
+    const SPEED_CENTER = (1 / 9) * 2 * Math.PI / 60;  
+    const SPEED_TABLE  = (1 / 9)  * 2 * Math.PI / 60;  
+    const SPEED_SMALL  = (1 / 5)  * 2 * Math.PI / 60;  
+
+    let direction = 1;
+    let accumulatedTurns = 0;
+    let colorHue = 0;
+    const COLOR_SPEED = 0.4;
+
+    const imgCenter   = new Image();
+    const imgCardinal = new Image();
+    const imgDiag1    = new Image();
+    const imgDiag2    = new Image();
+
+    imgCenter.src   = 'wan2.png';
+    imgCardinal.src = 'wan1.png';
+    imgDiag1.src    = 'yinyang1.png';
+    imgDiag2.src    = 'yinyang2.png';
+
+    const historyFrames = [];
+    const MAX_HISTORY_FRAMES = 120; 
+    let particles = [];
+
+    function spawnParticle() {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 1.5 + Math.random() * 3;
+      const randomHistoryIndex = Math.floor(Math.random() * historyFrames.length);
+
+      particles.push({
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        scale: 0.01, 
+        maxScale: 0.05 + Math.random() * 0.1, 
+        alpha: 0,    
+        rot: Math.random() * Math.PI * 2,
+        vRot: (Math.random() - 0.5) * 0.02,
+        historyIndex: randomHistoryIndex 
+      });
+    }
+
+    function updateAndDrawParticles() {
+      if (Math.random() < 0.08) {
+        spawnParticle();
+      }
+
+      const CX = canvas.width / 2;
+      const CY = canvas.height / 2;
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.vRot;
+
+        const distFromCenter = Math.hypot(p.x - CX, p.y - CY);
+        p.scale = Math.min(p.maxScale, (distFromCenter / outerR) * p.maxScale);
+        p.alpha = Math.min(1, distFromCenter / (outerR * 0.4));
+
+        const frameIndex = p.historyIndex % historyFrames.length;
+        const targetCanvas = historyFrames[frameIndex];
+
+        if (targetCanvas) {
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rot);
+          ctx.scale(p.scale, p.scale);
+          ctx.globalAlpha = p.alpha;
+          ctx.drawImage(targetCanvas, -targetCanvas.width / 2, -targetCanvas.height / 2);
+          ctx.restore();
+        }
+
+        if (p.x < -200 || p.x > canvas.width + 200 || p.y < -200 || p.y > canvas.height + 200) {
+          particles.splice(i, 1);
+        }
+      }
+    }
+
+    function drawImageInCircle(targetCtx, img, r) {
+      if (!img.complete || img.naturalWidth === 0) return;
+
+      targetCtx.save();
+      targetCtx.beginPath();
+      targetCtx.arc(0, 0, r, 0, Math.PI * 2);
+      targetCtx.closePath();
+      targetCtx.clip();
+
+      const size = r * 2;
+      targetCtx.drawImage(img, -r, -r, size, size);
+      targetCtx.restore();
+    }
+
+    function renderTableToCanvas(targetCanvas, customHue) {
+      const offCtx = targetCanvas.getContext('2d');
+      const tSize = targetCanvas.width;
+      offCtx.clearRect(0, 0, tSize, tSize);
+      
+      const tableColor = `hsl(${customHue % 360}, 85%, 55%)`;
+
+      offCtx.save();
+      offCtx.translate(tSize / 2, tSize / 2);
+      offCtx.rotate(tableAngle);
+
+      offCtx.beginPath();
+      offCtx.arc(0, 0, outerR, 0, Math.PI * 2);
+      offCtx.fillStyle = tableColor;
+      offCtx.fill();
+
+      offCtx.shadowColor = 'rgba(255, 255, 255, 0.9)';
+      offCtx.shadowBlur = 30;
+      offCtx.strokeStyle = '#FFFFFF';
+      offCtx.lineWidth = 6;
+      offCtx.stroke();
+      offCtx.shadowBlur = 0;
+
+      offCtx.save();
+      offCtx.rotate(centerAngle - tableAngle);
+      offCtx.beginPath();
+      offCtx.arc(0, 0, centerR, 0, Math.PI * 2);
+      offCtx.fillStyle = '#c41e3a';
+      offCtx.fill();
+      drawImageInCircle(offCtx, imgCenter, centerR);
+      offCtx.restore();
+
+      for (let i = 0; i < 8; i++) {
+        const a = (i * Math.PI / 4) - Math.PI / 2;
+        const x = Math.cos(a) * orbitR;
+        const y = Math.sin(a) * orbitR;
+
+        offCtx.save();
+        offCtx.translate(x, y);
+        offCtx.rotate(spinAngle);
+
+        offCtx.beginPath();
+        offCtx.arc(0, 0, smallR, 0, Math.PI * 2);
+        offCtx.fillStyle = 'rgba(0, 0, 0, 0)';
+        offCtx.fill();
+
+        let img = null;
+        if (i === 0 || i === 2 || i === 4 || i === 6) {
+          img = imgCardinal;
+        } else if (i === 7 || i === 3) {
+          img = imgDiag1;
+        } else {
+          img = imgDiag2;
+        }
+
+        drawImageInCircle(offCtx, img, smallR);
+        offCtx.restore();
+      }
+
+      offCtx.restore();
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const CX = canvas.width / 2;
+      const CY = canvas.height / 2;
+
+      const currentFrameCanvas = document.createElement('canvas');
+      currentFrameCanvas.width = tableCanvasSize;
+      currentFrameCanvas.height = tableCanvasSize;
+      renderTableToCanvas(currentFrameCanvas, colorHue);
+
+      historyFrames.push(currentFrameCanvas);
+      if (historyFrames.length > MAX_HISTORY_FRAMES) {
+        historyFrames.shift();
+      }
+
+      updateAndDrawParticles();
+
+      ctx.save();
+      ctx.translate(CX, CY);
+      ctx.drawImage(currentFrameCanvas, -currentFrameCanvas.width / 2, -currentFrameCanvas.height / 2);
+      ctx.restore();
+    }
+
+    canvas.addEventListener('click', (event) => {
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = event.clientX - rect.left;
+      const mouseY = event.clientY - rect.top;
+
+      const CX = canvas.width / 2;
+      const CY = canvas.height / 2;
+
+      const distToCenter = Math.hypot(mouseX - CX, mouseY - CY);
+      if (distToCenter <= centerR) {
+        if (audio.paused) {
+          audio2.pause();
+          audio2.currentTime = 0;
+          audio2Btn.classList.remove('active');
+          audio.play().catch(e => console.log(e));
+          timerDisplay.style.display = 'block';
+        } else {
+          audio.pause();
+          audio.currentTime = 0;
+          timerDisplay.style.display = 'none';
+        }
+      }
+    });
+
+    function toggleAudio2() {
+      if (audio2.paused) {
+        audio.pause();
+        audio.currentTime = 0;
+        audio2.play().catch(e => console.log(e));
+        audio2Btn.classList.add('active');
+        timerDisplay.style.display = 'block';
+      } else {
+        audio2.pause();
+        audio2.currentTime = 0;
+        audio2Btn.classList.remove('active');
+        timerDisplay.style.display = 'none';
+      }
+    }
+
+    function updateTimerDisplay(targetAudio) {
+      if (!targetAudio.paused && !isNaN(targetAudio.duration)) {
+        const timeLeft = Math.max(0, targetAudio.duration - targetAudio.currentTime);
+        const minutes = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+        const seconds = Math.floor(timeLeft % 60).toString().padStart(2, '0');
+        timerDisplay.textContent = `${minutes}:${seconds}`;
+      }
+    }
+
+    audio.addEventListener('timeupdate', () => {
+      if (!audio.paused) updateTimerDisplay(audio);
+    });
+
+    audio2.addEventListener('timeupdate', () => {
+      if (!audio2.paused) updateTimerDisplay(audio2);
+    });
+
+    // Vì audio2 bật chế độ loop nên sự kiện ended sẽ không kích hoạt trừ khi tắt loop, 
+    // nhưng ta giữ lại logic này đề phòng thay đổi.
+    audio2.addEventListener('ended', () => {
+      if (!audio2.loop) {
+        timerDisplay.style.display = 'none';
+        audio2.currentTime = 0;
+        audio2Btn.classList.remove('active');
+      }
+    });
+
+    // Xử lý hiển thị đồng hồ ngay khi trang vừa tải do audio2 bật autoplay
+    window.addEventListener('load', () => {
+      audio2.play().then(() => {
+        timerDisplay.style.display = 'block';
+      }).catch(e => {
+        // Trình duyệt có thể chặn autoplay nếu chưa có tương tác, xử lý fallback
+        console.log("Autoplay bị chặn bởi trình duyệt:", e);
+        audio2Btn.classList.remove('active');
+        timerDisplay.style.display = 'none';
+      });
+    });
+
+    function changeLang(lang) {
+      document.getElementById('btn-vi').classList.remove('active');
+      document.getElementById('btn-eng').classList.remove('active');
+      
+      if (lang === 'vi') {
+        document.getElementById('btn-vi').classList.add('active');
+        document.getElementById('text-top-trans').textContent = "Pháp Luân Đại Pháp Hảo";
+        document.getElementById('text-bottom-trans').textContent = "Chân Thiện Nhẫn Hảo";
+      } else {
+        document.getElementById('btn-eng').classList.add('active');
+        document.getElementById('text-top-trans').textContent = "Falun Dafa is Good";
+        document.getElementById('text-bottom-trans').textContent = "Truthfulness-Compassion-Forbearance is Good";
+      }
+    }
+
+    function animate() {
+      tableAngle  += direction * SPEED_TABLE;
+      centerAngle += direction * SPEED_CENTER;
+      spinAngle   += direction * SPEED_SMALL;
+
+      accumulatedTurns += Math.abs(SPEED_TABLE) / (2 * Math.PI);
+      if (accumulatedTurns >= 9) {
+        accumulatedTurns = 0;
+        direction = -direction;
+      }
+
+      colorHue += COLOR_SPEED;
+
+      draw();
+      requestAnimationFrame(animate);
+    }
+
+    let loaded = 0;
+    const totalImgs = 4;
+    function checkStart() {
+      loaded++;
+      if (loaded >= totalImgs) {
+        animate();
+      }
+    }
+
+    [imgCenter, imgCardinal, imgDiag1, imgDiag2].forEach(img => {
+      img.onload = checkStart;
+      img.onerror = checkStart; 
+    });
+
+    setTimeout(() => {
+      if (loaded < totalImgs) animate();
+    }, 1500);
+  </script>
+</body>
+</html>
