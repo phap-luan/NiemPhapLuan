@@ -31,7 +31,7 @@
     }
 
     /* Thanh góc trên: Đồng hồ, Nút Loa & Nút ngôn ngữ */
-    #top-bar-container {
+   #top-bar-container {
   position: absolute;
   top: 15px;
   right: 15px; /* Đổi từ left sang right và cách lề phải 15px */
@@ -87,9 +87,9 @@
       background: rgba(0, 0, 0, 0.7);
       border: 1px solid rgba(255, 255, 255, 0.4);
       color: #fff;
-      width: 32px;
-      height: 32px;
-      font-size: 14px;
+      width: 40px;
+      height: 40px;
+      font-size: 20px;
       border-radius: 50%;
       cursor: pointer;
       display: flex;
@@ -120,11 +120,11 @@
 
     /* Mặc định cho điện thoại (màn hình nhỏ) */
 #top-text-group {
-  margin-top: 150px; 
+  margin-top: 90px; 
 }
 
 #bottom-text-group {
-  margin-bottom: 150px; 
+  margin-bottom: 90px; 
 }
 
 /* Dành cho máy tính (PC / màn hình từ 768px trở lên) */
@@ -136,6 +136,7 @@
     margin-bottom: 25px;
   }
 }
+
     .pinyin-han-grid-5 {
       display: grid;
       grid-template-columns: repeat(5, minmax(50px, 1fr));
@@ -225,11 +226,15 @@
   <div id="top-bar-container">
     <div id="timer-display">00:00</div>
     <!-- Nút icon loa chuyển lên trước nhóm nút ngôn ngữ (bên trái nút Vi) -->
-    <button class="audio-btn active" id="btn-audio2" onclick="toggleAudio2()" title="Phát/Tắt nhạc 2">🔊</button>
+    <button class="audio-btn active" id="btn-audio2" onclick="toggleAudio2()" title="Phát/Tắt Nhạc Niệm">Nghe Niệm🔊</button>
     <div class="lang-btn-group">
-      <button class="lang-btn active" id="btn-vi" onclick="changeLang('vi')">Vi</button>
-      <button class="lang-btn" id="btn-eng" onclick="changeLang('eng')">Eng</button>
-    </div>
+  <button class="lang-btn active" id="btn-vi" onclick="changeLang('vi')">
+    <img src="https://flagcdn.com/24x18/vn.png" alt="VN" style="vertical-align: middle; margin-right: 3px; width: 16px; height: 12px;"> Vi
+  </button>
+  <button class="lang-btn" id="btn-eng" onclick="changeLang('eng')">
+    <img src="https://flagcdn.com/24x18/gb.png" alt="EN" style="vertical-align: middle; margin-right: 3px; width: 16px; height: 12px;"> Eng
+  </button>
+</div>
   </div>
 
   <!-- Nhóm Dòng 1 (Phía trên vòng xoay): 5x2 Grid -->
