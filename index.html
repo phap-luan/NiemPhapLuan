@@ -118,14 +118,24 @@
       justify-content: center;
     }
 
-    #top-text-group {
-      margin-top: 45px; 
-    }
+    /* Mặc định cho điện thoại (màn hình nhỏ) */
+#top-text-group {
+  margin-top: 90px; 
+}
 
-    #bottom-text-group {
-      margin-bottom: 45px;
-    }
+#bottom-text-group {
+  margin-bottom: 90px; 
+}
 
+/* Dành cho máy tính (PC / màn hình từ 768px trở lên) */
+@media (min-width: 768px) {
+  #top-text-group {
+    margin-top: 25px;
+  }
+  #bottom-text-group {
+    margin-bottom: 25px;
+  }
+}
     .pinyin-han-grid-5 {
       display: grid;
       grid-template-columns: repeat(5, minmax(50px, 1fr));
