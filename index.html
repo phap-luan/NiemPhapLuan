@@ -87,16 +87,24 @@
       background: rgba(0, 0, 0, 0.7);
       border: 1px solid rgba(255, 255, 255, 0.4);
       color: #fff;
-      width: 40px;
       height: 40px;
       font-size: 20px;
-      border-radius: 50%;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       box-shadow: 0 4px 10px rgba(0,0,0,0.3);
       transition: all 0.2s;
+      width: auto; /* Cho phép nút tự giãn ra theo chiều ngang để chứa chữ */
+      padding: 0 10px; /* Thêm khoảng đệm hai bên */
+      border-radius: 20px; /* Chuyển thành dạng nút thuôn dài cho đẹp mắt */
+      gap: 6px; /* Khoảng cách giữa icon loa và chữ */
+    }
+
+    .audio-btn span {
+      font-size: 12px;
+      font-weight: bold;
+      white-space: nowrap;
     }
 
     .audio-btn.active, .audio-btn:hover {
@@ -119,23 +127,23 @@
     }
 
     /* Mặc định cho điện thoại (màn hình nhỏ) */
-#top-text-group {
-  margin-top: 90px; 
-}
+    #top-text-group {
+      margin-top: 90px; 
+    }
 
-#bottom-text-group {
-  margin-bottom: 90px; 
-}
+    #bottom-text-group {
+      margin-bottom: 90px; 
+    }
 
-/* Dành cho máy tính (PC / màn hình từ 768px trở lên) */
-@media (min-width: 768px) {
-  #top-text-group {
-    margin-top: 25px;
-  }
-  #bottom-text-group {
-    margin-bottom: 25px;
-  }
-}
+    /* Dành cho máy tính (PC / màn hình từ 768px trở lên) */
+    @media (min-width: 768px) {
+      #top-text-group {
+        margin-top: 25px;
+      }
+      #bottom-text-group {
+        margin-bottom: 25px;
+      }
+    }
 
     .pinyin-han-grid-5 {
       display: grid;
@@ -199,15 +207,14 @@
       text-align: center;
     } 
 
-@font-face {
-  font-family: 'MyCustomFont';
-  src: url('CN-Le.ttf') format('truetype');
-}
+    @font-face {
+      font-family: 'MyCustomFont';
+      src: url('CN-Le.ttf') format('truetype');
+    }
 
     .han-text {
-      font-family:  'MyCustomFont', "SimSun", "STSong", "Microsoft YaHei", sans-serif;
+      font-family: 'MyCustomFont', "SimSun", "STSong", "Microsoft YaHei", sans-serif;
       font-size: clamp(24px, 8vw, 45px);
-      //font-weight: bold;
       line-height: 1.2;
       white-space: nowrap;
       color: #ffeb3b;
@@ -219,22 +226,20 @@
   <canvas id="c"></canvas>
   
   <audio id="myAudio" src="https://media.falundafa.org/media1/media/dafa/music/128k/PuDu.mp3" loop></audio>
-  <!-- Thêm autoplay và loop cho audio2 -->
   <audio id="audio2" src="niem.mp3" autoplay loop></audio>
 
   <!-- Thanh góc trên -->
   <div id="top-bar-container">
     <div id="timer-display">00:00</div>
-    <!-- Nút icon loa chuyển lên trước nhóm nút ngôn ngữ (bên trái nút Vi) -->
-    <button class="audio-btn active" id="btn-audio2" onclick="toggleAudio2()" title="Phát/Tắt Nhạc Niệm">Nghe Niệm🔊</button>
+    <button class="audio-btn active" id="btn-audio2" onclick="toggleAudio2()" title="Phát/Tắt nhạc 2">🔊 <span>Nghe Niệm</span></button>
     <div class="lang-btn-group">
-  <button class="lang-btn active" id="btn-vi" onclick="changeLang('vi')">
-    <img src="https://flagcdn.com/24x18/vn.png" alt="VN" style="vertical-align: middle; margin-right: 3px; width: 16px; height: 12px;"> Vi
-  </button>
-  <button class="lang-btn" id="btn-eng" onclick="changeLang('eng')">
-    <img src="https://flagcdn.com/24x18/gb.png" alt="EN" style="vertical-align: middle; margin-right: 3px; width: 16px; height: 12px;"> Eng
-  </button>
-</div>
+      <button class="lang-btn active" id="btn-vi" onclick="changeLang('vi')">
+        <img src="https://flagcdn.com/24x18/vn.png" alt="VN" style="vertical-align: middle; margin-right: 3px; width: 16px; height: 12px;"> Vi
+      </button>
+      <button class="lang-btn" id="btn-eng" onclick="changeLang('eng')">
+        <img src="https://flagcdn.com/24x18/gb.png" alt="EN" style="vertical-align: middle; margin-right: 3px; width: 16px; height: 12px;"> Eng
+      </button>
+    </div>
   </div>
 
   <!-- Nhóm Dòng 1 (Phía trên vòng xoay): 5x2 Grid -->
@@ -487,6 +492,44 @@
       ctx.restore();
     }
 
+    // --- LOGIC XỬ LÝ ÂM LƯỢNG VÀ ĐỒNG HỒ ĐỘC LẬP ---
+
+    function updateAudioVolumes() {
+      const isAudioPlaying = !audio.paused;
+      const isAudio2Playing = !audio2.paused;
+
+      if (isAudioPlaying && isAudio2Playing) {
+        audio.volume = 0.3;   // myaudio giảm 50% khi chạy cùng audio2
+        audio2.volume = 1.0;  // audio2 giữ nguyên 100%
+      } else if (isAudioPlaying) {
+        audio.volume = 1.0;
+      } else if (isAudio2Playing) {
+        audio2.volume = 1.0;
+      }
+    }
+
+    function updateTimerDisplay() {
+      let targetAudio = null;
+      
+      // Ưu tiên hiển thị thời gian của audio2 nếu đang bật, ngược lại hiển thị myaudio
+      if (!audio2.paused) {
+        targetAudio = audio2;
+      } else if (!audio.paused) {
+        targetAudio = audio;
+      }
+
+      if (targetAudio && !isNaN(targetAudio.duration)) {
+        const timeLeft = Math.max(0, targetAudio.duration - targetAudio.currentTime);
+        const minutes = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+        const seconds = Math.floor(timeLeft % 60).toString().padStart(2, '0');
+        timerDisplay.textContent = `${minutes}:${seconds}`;
+        timerDisplay.style.display = 'block';
+      } else {
+        timerDisplay.style.display = 'none';
+      }
+    }
+
+    // Click vào vòng xoay để bật/tắt myAudio
     canvas.addEventListener('click', (event) => {
       const rect = canvas.getBoundingClientRect();
       const mouseX = event.clientX - rect.left;
@@ -498,67 +541,44 @@
       const distToCenter = Math.hypot(mouseX - CX, mouseY - CY);
       if (distToCenter <= centerR) {
         if (audio.paused) {
-          audio2.pause();
-          audio2.currentTime = 0;
-          audio2Btn.classList.remove('active');
           audio.play().catch(e => console.log(e));
-          timerDisplay.style.display = 'block';
         } else {
           audio.pause();
           audio.currentTime = 0;
-          timerDisplay.style.display = 'none';
         }
+        updateAudioVolumes();
+        updateTimerDisplay();
       }
     });
 
+    // Nút "Nghe Niệm" (audio2)
     function toggleAudio2() {
       if (audio2.paused) {
-        audio.pause();
-        audio.currentTime = 0;
         audio2.play().catch(e => console.log(e));
         audio2Btn.classList.add('active');
-        timerDisplay.style.display = 'block';
       } else {
         audio2.pause();
         audio2.currentTime = 0;
         audio2Btn.classList.remove('active');
-        timerDisplay.style.display = 'none';
       }
-    }
-
-    function updateTimerDisplay(targetAudio) {
-      if (!targetAudio.paused && !isNaN(targetAudio.duration)) {
-        const timeLeft = Math.max(0, targetAudio.duration - targetAudio.currentTime);
-        const minutes = Math.floor(timeLeft / 60).toString().padStart(2, '0');
-        const seconds = Math.floor(timeLeft % 60).toString().padStart(2, '0');
-        timerDisplay.textContent = `${minutes}:${seconds}`;
-      }
+      updateAudioVolumes();
+      updateTimerDisplay();
     }
 
     audio.addEventListener('timeupdate', () => {
-      if (!audio.paused) updateTimerDisplay(audio);
+      if (!audio.paused) updateTimerDisplay();
     });
 
     audio2.addEventListener('timeupdate', () => {
-      if (!audio2.paused) updateTimerDisplay(audio2);
+      if (!audio2.paused) updateTimerDisplay();
     });
 
-    // Vì audio2 bật chế độ loop nên sự kiện ended sẽ không kích hoạt trừ khi tắt loop, 
-    // nhưng ta giữ lại logic này đề phòng thay đổi.
-    audio2.addEventListener('ended', () => {
-      if (!audio2.loop) {
-        timerDisplay.style.display = 'none';
-        audio2.currentTime = 0;
-        audio2Btn.classList.remove('active');
-      }
-    });
-
-    // Xử lý hiển thị đồng hồ ngay khi trang vừa tải do audio2 bật autoplay
+    // Xử lý tự động khi trang vừa tải (audio2 autoplay)
     window.addEventListener('load', () => {
       audio2.play().then(() => {
-        timerDisplay.style.display = 'block';
+        updateAudioVolumes();
+        updateTimerDisplay();
       }).catch(e => {
-        // Trình duyệt có thể chặn autoplay nếu chưa có tương tác, xử lý fallback
         console.log("Autoplay bị chặn bởi trình duyệt:", e);
         audio2Btn.classList.remove('active');
         timerDisplay.style.display = 'none';
